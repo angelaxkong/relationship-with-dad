@@ -101,7 +101,8 @@
 
 <script>
 (() => {
-  const SLIDES = Array.from({ length: 40 }, (_, i) => `slides/slide-${String(i + 1).padStart(2, "0")}.jpg`);
+  const V = "20261012c"; // bump after any slide change so phones don't show old cached photos
+  const SLIDES = Array.from({ length: 40 }, (_, i) => `slides/slide-${String(i + 1).padStart(2, "0")}.jpg?v=${V}`);
   const N = SLIDES.length, LAST = N - 1;
 
   // ---- music: 願與愁 (JJ Lin). Plays on open where the browser allows it; otherwise the first
@@ -133,13 +134,21 @@
     pagesEl.appendChild(p);
     return { el: p, shade: p.querySelector(".shade"), img: p.querySelector("img") };
   });
-  const ensure = (i) => { const im = pages[i] && pages[i].img; if (im && !im.getAttribute("src")) im.src = im.dataset.src; return im; };
-  (async () => { // load in reading order so the first pages aren't starved on a slow phone
-    for (let i = 0; i < N; i++) {
-      const im = ensure(i);
-      if (!im.complete) await new Promise((r) => { im.addEventListener("load", r, { once: true }); im.addEventListener("error", r, { once: true }); });
-    }
-  })();
+  // iPhones crash ("A problem repeatedly occurred") if all 40 photos sit decoded in 3D layers at once,
+  // so only the pages around the current one exist on screen and hold their photo
+  const BLANK = "data:image/gif;base64,R0lGODlhAQABAAAAACw=";
+  let windowAt = -99;
+  function manage(cur) {
+    if (cur === windowAt) return;
+    windowAt = cur;
+    pages.forEach((pg, i) => {
+      const near = i >= cur - 1 && i <= cur + 3, keep = i >= cur - 2 && i <= cur + 5;
+      if (near && pg.img.dataset.on !== "1") { pg.img.src = pg.img.dataset.src; pg.img.dataset.on = "1"; }
+      else if (!keep && pg.img.dataset.on === "1") { pg.img.src = BLANK; pg.img.dataset.on = ""; }
+      if (i < cur - 1 || i > cur + 2) pg.el.style.display = "none";
+    });
+  }
+  manage(0);
 
   // ---- floating hearts & sparkles
   const floatsEl = document.getElementById("floats");
@@ -161,10 +170,12 @@
 
   function render(t, flip, tap) {
     for (const f of FLOATS) f.el.style.transform = `translateY(${Math.sin(t * 0.9 + f.phase) * 10}px) rotate(${Math.sin(t * 0.6 + f.phase) * 12}deg)`;
-    for (let i = 0; i < N; i++) {
+    manage(Math.floor(flip));
+    for (let i = Math.max(0, Math.floor(flip) - 1); i <= Math.min(LAST, Math.floor(flip) + 2); i++) {
       const p = clamp(flip - i), { el, shade } = pages[i];
-      if (p >= 1) { el.style.visibility = "hidden"; continue; }
-      el.style.visibility = "visible";
+      // a fully turned page is removed, not just hidden: Chrome/Safari kept painting hidden 3D pages
+      if (p >= 1) { el.style.display = "none"; continue; }
+      el.style.display = "";
       el.style.transform = `translateZ(${Math.sin(p * Math.PI) * 30}px) rotateY(${-p * 178}deg)`;
       el.style.opacity = p > 0.55 ? 1 - (p - 0.55) / 0.45 : 1;
       el.style.zIndex = p > 0 ? N + 2 : N - i;
@@ -194,7 +205,7 @@
   let tween = null, tap = null;
   const tweenTo = (to, dur) => { tween = { from: state.flip, to, start: performance.now(), dur: dur * 1000 }; };
   const target = () => Math.round(tween ? tween.to : state.flip);
-  function next() { const t = Math.min(LAST, target() + 1); ensure(t); ensure(t + 1); if (t !== target()) tweenTo(t, 0.75); }
+  function next() { const t = Math.min(LAST, target() + 1); if (t !== target()) tweenTo(t, 0.75); }
   function prev() { const t = target(); if (t > 0) tweenTo(t - 1, 0.6); }
   document.getElementById("credits").addEventListener("click", (e) => e.stopPropagation());
   again.addEventListener("click", (e) => { e.stopPropagation(); tweenTo(0, 1.4); });
@@ -215,7 +226,7 @@
   function loop(now) {
     if (tween) {
       const a = clamp((now - tween.start) / tween.dur);
-      state.flip = lerp(tween.from, tween.to, ease(a));
+      state.flip = a >= 1 ? tween.to : lerp(tween.from, tween.to, ease(a));
       if (a >= 1) tween = null;
     }
     render((now - t0) / 1000, state.flip, tap ? { x: tap.x, y: tap.y, age: (now - tap.born) / 1000 } : null);
