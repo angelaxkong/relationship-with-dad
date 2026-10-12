@@ -89,7 +89,7 @@
         <div id="pages"></div>
       </div>
     </div>
-    <div id="hint">tap to turn the page ♡</div>
+    <div id="hint">tap to begin ♪</div>
     <div id="counter"></div>
     <button id="again" type="button">↺ read again</button>
     <a id="credits" href="credits.html" target="_blank" rel="noopener">photo credits</a>
@@ -112,7 +112,11 @@
   const showSound = () => { soundBtn.textContent = muted ? "✕" : "♪"; soundBtn.setAttribute("aria-label", muted ? "Play music" : "Mute music"); };
   function startMusic() { if (!muted && song.paused) song.play().catch(() => {}); }
   startMusic();
-  for (const ev of ["pointerdown", "touchstart", "keydown"]) addEventListener(ev, (e) => { if (e.target !== soundBtn) startMusic(); }, { passive: true });
+  // phones block sound until the first touch, so unless the song already started on load,
+  // the first tap only starts the music (and stays on slide 1); later taps turn pages
+  let touched = false, playedOnLoad = false, firstTapDone = false;
+  song.addEventListener("playing", () => { if (!touched) playedOnLoad = true; document.getElementById("hint").textContent = "tap to turn the page ♡"; });
+  for (const ev of ["pointerdown", "touchstart", "keydown"]) addEventListener(ev, (e) => { touched = true; if (e.target !== soundBtn) startMusic(); }, { passive: true });
   soundBtn.addEventListener("click", (e) => {
     e.stopPropagation();
     muted = !song.paused;
@@ -196,13 +200,14 @@
   again.addEventListener("click", (e) => { e.stopPropagation(); tweenTo(0, 1.4); });
   $("viewport").addEventListener("click", (e) => {
     startMusic();
+    if (!playedOnLoad && !firstTapDone) { firstTapDone = true; hint.textContent = "tap to turn the page ♡"; return; }
     const r = $("stage").getBoundingClientRect();
     const sx = ((e.clientX - r.left) / r.width) * 540, sy = ((e.clientY - r.top) / r.height) * 800;
     tap = { x: sx, y: sy, born: performance.now() };
     if (sx < 150) prev(); else next();
   });
   addEventListener("keydown", (e) => {
-    if (e.key === "ArrowRight" || e.key === " ") { startMusic(); next(); }
+    if (e.key === "ArrowRight" || e.key === " ") { startMusic(); if (!playedOnLoad && !firstTapDone) { firstTapDone = true; return; } next(); }
     if (e.key === "ArrowLeft") prev();
   });
 
