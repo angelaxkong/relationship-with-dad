@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Relationship With Dad</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  /* one open booklet on a warm table; tap to turn pages; the song plays underneath */
+  :root {
+    --bg: #fbf1e6;
+    --bg-blob: #f6d9cf;
+    --ink: #5b3a2e;
+    --ink-soft: #9a7363;
+    --paper: #fffaf2;
+    --paper-line: #efe2d2;
+    --metal: #c9a86a;
+    --heart: #e0675f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bg: #2b211d; --bg-blob: #3d2c26; --ink: #f5e6d8; --ink-soft: #c8ab98; color-scheme: dark; }
+  }
+  :root[data-theme="dark"] { --bg: #2b211d; --bg-blob: #3d2c26; --ink: #f5e6d8; --ink-soft: #c8ab98; color-scheme: dark; }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--bg); overflow: hidden; color: var(--ink);
+    font-family: "Caveat", "Bradley Hand", cursive;
+    -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; touch-action: manipulation;
+  }
+  #viewport { position: fixed; left: 0; right: 0; top: 0; bottom: 0; cursor: pointer; overflow: hidden; }
+  /* fixed 540x800 design stage, scaled to fit the space above the player */
+  #stage { position: absolute; left: 50%; top: 50%; width: 540px; height: 800px; transform-origin: center center; }
+  .blob { position: absolute; border-radius: 50%; background: var(--bg-blob); filter: blur(2px); }
+  .float { position: absolute; color: var(--heart); opacity: .55; will-change: transform; }
+
+  #book { position: absolute; left: 30px; top: 60px; width: 480px; height: 600px; }
+  #book-inner { position: absolute; inset: 0; perspective: 1900px; transform-style: preserve-3d; }
+  .edge { position: absolute; inset: 0; border-radius: 4px 10px 10px 4px; background: var(--paper); border: 1px solid #e6d5c1; }
+  #shadow { position: absolute; left: 10px; right: -6px; bottom: -24px; height: 32px; background: radial-gradient(closest-side, rgba(70,40,25,.28), transparent); }
+  .page { position: absolute; inset: 0; transform-origin: 0 50%; transform-style: preserve-3d; }
+  .face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 3px 10px 10px 3px; overflow: hidden; background: var(--paper); }
+  .face img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .face.front::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 18px; background: linear-gradient(90deg, rgba(60,30,20,.28), transparent); }
+  .face.back { transform: rotateY(180deg); background-image: repeating-linear-gradient(transparent 0 33px, var(--paper-line) 33px 34px); }
+  .shade { position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; }
+
+  #hint { position: absolute; left: 0; right: 0; top: 690px; text-align: center; font-size: 30px; font-weight: 700; transition: opacity .6s; }
+  #counter { position: absolute; left: 0; right: 0; top: 690px; text-align: center; font-size: 28px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+  #again {
+    position: absolute; left: 50%; top: 735px; transform: translateX(-50%);
+    font: inherit; font-size: 28px; font-weight: 700; color: var(--ink);
+    background: var(--paper); border: 2px solid var(--ink-soft); border-radius: 999px; padding: 4px 22px;
+    cursor: pointer; opacity: 0; pointer-events: none; transition: opacity .4s;
+  }
+  #again.show { opacity: 1; pointer-events: auto; }
+  #credits { position: absolute; left: 0; right: 0; top: 780px; text-align: center; font-size: 20px; color: var(--ink-soft); opacity: 0; pointer-events: none; transition: opacity .4s; }
+  #credits.show { opacity: 1; pointer-events: auto; }
+  #again:focus-visible { outline: 3px solid var(--heart); outline-offset: 3px; }
+  #tap { position: absolute; width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 50%; border: 3px solid rgba(255,255,255,.95); background: rgba(255,255,255,.35); box-shadow: 0 0 0 2px rgba(91,58,46,.25); opacity: 0; pointer-events: none; }
+
+  #sound {
+    position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    width: 48px; height: 48px; border-radius: 50%; border: 2px solid var(--ink-soft);
+    background: var(--paper); color: #5b3a2e; font-size: 22px; line-height: 1; cursor: pointer;
+    display: grid; place-items: center; padding: 0;
+  }
+  #sound:focus-visible { outline: 3px solid var(--heart); outline-offset: 3px; }
+  @media (prefers-reduced-motion: reduce) { .float { display: none; } }
+</style>
+</head>
+<body>
+<div id="viewport">
+  <div id="stage">
+    <div class="blob" style="left:-120px;top:-110px;width:360px;height:360px"></div>
+    <div class="blob" style="right:-150px;top:330px;width:340px;height:340px;opacity:.7"></div>
+    <div class="blob" style="left:-110px;bottom:-140px;width:300px;height:300px;opacity:.8"></div>
+    <div id="floats"></div>
+    <div id="book">
+      <div id="shadow"></div>
+      <div id="book-inner">
+        <div class="edge" style="transform:translate(7px,7px)"></div>
+        <div class="edge" style="transform:translate(4.5px,4.5px)"></div>
+        <div class="edge" style="transform:translate(2px,2px)"></div>
+        <div id="pages"></div>
+      </div>
+    </div>
+    <div id="hint">tap to turn the page ♡</div>
+    <div id="counter"></div>
+    <button id="again" type="button">↺ read again</button>
+    <a id="credits" href="credits.html" target="_blank" rel="noopener">photo credits</a>
+    <div id="tap"></div>
+  </div>
+</div>
+<audio id="song" src="song.mp3" preload="auto" loop autoplay></audio>
+<button id="sound" type="button" aria-label="Mute music">♪</button>
+
+<script>
+(() => {
+  const SLIDES = Array.from({ length: 41 }, (_, i) => `slides/slide-${String(i + 1).padStart(2, "0")}.jpg`);
+  const N = SLIDES.length, LAST = N - 1;
+
+  // ---- music: 願與愁 (JJ Lin). Plays on open where the browser allows it; otherwise the first
+  // touch anywhere starts it (phones block sound until the viewer interacts with the page)
+  const song = document.getElementById("song"), soundBtn = document.getElementById("sound");
+  song.volume = 0.8;
+  let muted = false;
+  const showSound = () => { soundBtn.textContent = muted ? "✕" : "♪"; soundBtn.setAttribute("aria-label", muted ? "Play music" : "Mute music"); };
+  function startMusic() { if (!muted && song.paused) song.play().catch(() => {}); }
+  startMusic();
+  for (const ev of ["pointerdown", "touchstart", "keydown"]) addEventListener(ev, (e) => { if (e.target !== soundBtn) startMusic(); }, { passive: true });
+  soundBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    muted = !song.paused;
+    if (muted) song.pause(); else song.play().catch(() => {});
+    showSound();
+  });
+
+  // ---- pages
+  const pagesEl = document.getElementById("pages");
+  const pages = SLIDES.map((src) => {
+    const p = document.createElement("div");
+    p.className = "page";
+    p.innerHTML = `<div class="face front"><img data-src="${src}" alt="" decoding="async"><div class="shade"></div></div><div class="face back"></div>`;
+    pagesEl.appendChild(p);
+    return { el: p, shade: p.querySelector(".shade"), img: p.querySelector("img") };
+  });
+  const ensure = (i) => { const im = pages[i] && pages[i].img; if (im && !im.getAttribute("src")) im.src = im.dataset.src; return im; };
+  (async () => { // load in reading order so the first pages aren't starved on a slow phone
+    for (let i = 0; i < N; i++) {
+      const im = ensure(i);
+      if (!im.complete) await new Promise((r) => { im.addEventListener("load", r, { once: true }); im.addEventListener("error", r, { once: true }); });
+    }
+  })();
+
+  // ---- floating hearts & sparkles
+  const floatsEl = document.getElementById("floats");
+  const FLOATS = [[20, 20, "♡", 1.0], [480, 18, "✦", 0.7], [505, 300, "♡", 0.8], [8, 380, "✦", 0.6], [500, 640, "♡", 0.9], [14, 640, "✧", 0.7], [260, 12, "✧", 0.5]]
+    .map(([x, y, ch, sc], i) => {
+      const d = document.createElement("div");
+      d.className = "float"; d.textContent = ch;
+      d.style.left = x + "px"; d.style.top = y + "px"; d.style.fontSize = 18 + sc * 14 + "px";
+      if (ch !== "♡") d.style.color = "var(--metal)";
+      floatsEl.appendChild(d);
+      return { el: d, phase: i * 1.7 };
+    });
+
+  const $ = (id) => document.getElementById(id);
+  const tapEl = $("tap"), counter = $("counter"), again = $("again"), hint = $("hint");
+  const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+
+  function render(t, flip, tap) {
+    for (const f of FLOATS) f.el.style.transform = `translateY(${Math.sin(t * 0.9 + f.phase) * 10}px) rotate(${Math.sin(t * 0.6 + f.phase) * 12}deg)`;
+    for (let i = 0; i < N; i++) {
+      const p = clamp(flip - i), { el, shade } = pages[i];
+      if (p >= 1) { el.style.visibility = "hidden"; continue; }
+      el.style.visibility = "visible";
+      el.style.transform = `translateZ(${Math.sin(p * Math.PI) * 30}px) rotateY(${-p * 178}deg)`;
+      el.style.opacity = p > 0.55 ? 1 - (p - 0.55) / 0.45 : 1;
+      el.style.zIndex = p > 0 ? N + 2 : N - i;
+      shade.style.opacity = p * 0.35;
+    }
+    const shown = Math.round(flip);
+    counter.textContent = flip > 0.05 ? `${shown + 1} / ${N}` : "";
+    hint.style.opacity = flip > 0.05 ? 0 : 0.75 + 0.25 * Math.sin(t * 4);
+    again.classList.toggle("show", flip > LAST - 0.05);
+    document.getElementById("credits").classList.toggle("show", flip > LAST - 0.05);
+    if (tap) {
+      tapEl.style.left = tap.x + "px"; tapEl.style.top = tap.y + "px";
+      const a = clamp(tap.age / 0.45);
+      tapEl.style.opacity = a < 1 ? (1 - a) * 0.95 : 0;
+      tapEl.style.transform = `scale(${0.6 + a * 0.9})`;
+    } else tapEl.style.opacity = 0;
+  }
+
+  function fit() {
+    const r = $("viewport").getBoundingClientRect();
+    const sc = Math.min(r.width / 540, r.height / 800);
+    $("stage").style.transform = `translate(-50%, -50%) scale(${sc})`;
+  }
+  addEventListener("resize", fit); fit();
+
+  const state = { flip: 0 };
+  let tween = null, tap = null;
+  const tweenTo = (to, dur) => { tween = { from: state.flip, to, start: performance.now(), dur: dur * 1000 }; };
+  const target = () => Math.round(tween ? tween.to : state.flip);
+  function next() { const t = Math.min(LAST, target() + 1); ensure(t); ensure(t + 1); if (t !== target()) tweenTo(t, 0.75); }
+  function prev() { const t = target(); if (t > 0) tweenTo(t - 1, 0.6); }
+  document.getElementById("credits").addEventListener("click", (e) => e.stopPropagation());
+  again.addEventListener("click", (e) => { e.stopPropagation(); tweenTo(0, 1.4); });
+  $("viewport").addEventListener("click", (e) => {
+    startMusic();
+    const r = $("stage").getBoundingClientRect();
+    const sx = ((e.clientX - r.left) / r.width) * 540, sy = ((e.clientY - r.top) / r.height) * 800;
+    tap = { x: sx, y: sy, born: performance.now() };
+    if (sx < 150) prev(); else next();
+  });
+  addEventListener("keydown", (e) => {
+    if (e.key === "ArrowRight" || e.key === " ") { startMusic(); next(); }
+    if (e.key === "ArrowLeft") prev();
+  });
+
+  const t0 = performance.now();
+  function loop(now) {
+    if (tween) {
+      const a = clamp((now - tween.start) / tween.dur);
+      state.flip = lerp(tween.from, tween.to, ease(a));
+      if (a >= 1) tween = null;
+    }
+    render((now - t0) / 1000, state.flip, tap ? { x: tap.x, y: tap.y, age: (now - tap.born) / 1000 } : null);
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
